@@ -1,6 +1,6 @@
 # Code Quality Setup Script
 
-A one-command setup script to add comprehensive code quality tooling to your JavaScript/TypeScript/React Native projects.
+A one-command setup script to add comprehensive code quality tooling to your React Native projects.
 
 ## Features
 
