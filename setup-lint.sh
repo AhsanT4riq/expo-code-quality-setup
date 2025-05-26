@@ -2,74 +2,124 @@
 set -euo pipefail
 IFS=$'\n\t'
 
-# Usage: curl -sL https://raw.githubusercontent.com/ahsant4riq/code-quality-setup/main/setup-lint.sh | bash -s [npm|yarn|pnpm|bun]
-pm="${1:-npm}"                                          # default to npm if no arg
-pm=$(printf '%s' "$pm" | tr '[:upper:]' '[:lower:]')    # lowercase safely
+# --------------------------------------------
+# Usage:
+#   curl -sL https://raw.githubusercontent.com/ahsant4riq/code-quality-setup/main/setup-lint.sh \
+#     | bash -s [npm|yarn|pnpm|bun]
+# --------------------------------------------
 
-[[ "$pm" =~ ^(npm|yarn|pnpm|bun)$ ]] || { echo "PM must be npm|yarn|pnpm|bun"; exit 1; }
+# 1) Pick package manager
+pm="${1:-npm}"
+pm=$(printf '%s' "$pm" | tr '[:upper:]' '[:lower:]')
 
-[[ -f package.json ]] || { echo "Run in project root (package.json missing)"; exit 1; }
+[[ "$pm" =~ ^(npm|yarn|pnpm|bun)$ ]] || {
+  echo "❌  PM must be one of: npm | yarn | pnpm | bun"; exit 1; }
+[[ -f package.json ]] || { echo "❌  No package.json found—run in project root"; exit 1; }
+command -v "$pm" >/dev/null 2>&1 || { echo "❌  '$pm' not in PATH"; exit 1; }
 
-command -v "$pm" >/dev/null || { echo "$pm not found in PATH"; exit 1; }
-
-# Map install / run / dlx helpers
+# 2) Map helpers per PM (arrays for install & run)
 case "$pm" in
-  npm)  install="npm install -D";  run="npm run";  exec_bin="npx";;
-  yarn) install="yarn add -D";     run="yarn";     exec_bin="$(command -v yarn dlx >/dev/null && echo 'yarn dlx' || echo 'npx')";;
-  pnpm) install="pnpm add -D";     run="pnpm";     exec_bin="pnpm dlx";;
-  bun)  install="bun add -d";      run="bun run";  exec_bin="bunx";;
+  npm)
+    install_cmd=(npm install --save-dev --)     # array prevents word-splitting issues
+    run_cmd=(npm run)
+    commitlint_cmd='npx --no-install commitlint --edit "$1"'
+    ;;
+  yarn)
+    install_cmd=(yarn add --dev --)
+    run_cmd=(yarn)
+    commitlint_cmd='yarn commitlint --edit "$1"'
+    ;;
+  pnpm)
+    install_cmd=(pnpm add -D --)
+    run_cmd=(pnpm run)
+    commitlint_cmd='pnpm exec commitlint --edit "$1"'
+    ;;
+  bun)
+    install_cmd=(bun add -d --)
+    run_cmd=(bun run)
+    commitlint_cmd='bunx commitlint --edit "$1"'
+    ;;
 esac
 
-# Init git repo if missing (needed for Husky)
+# 3) Init Git if missing (needed for Husky)
 [ -d .git ] || git init
 
-# ------- download flat-config files from GitHub repo -------
-repo_base="https://raw.githubusercontent.com/ahsant4riq/code-quality-setup/main"
+# 4) Download config files
+repo_base="https://raw.githubusercontent.com/ahsant4riq/expo-code-quality-setup/main"
+curl -sSfL "$repo_base/eslint.config.js"     -o eslint.config.js
+curl -sSfL "$repo_base/.prettierrc"          -o .prettierrc
+curl -sSfL "$repo_base/commitlint.config.js" -o commitlint.config.js
+echo "✅  Config files downloaded."
 
-curl -sSfL "$repo_base/eslint.config.js"       -o eslint.config.js
-curl -sSfL "$repo_base/.prettierrc"            -o .prettierrc
-curl -sSfL "$repo_base/commitlint.config.js"   -o commitlint.config.js
+# 5) Build install list, skipping only exact 'eslint'
+pkg_list=(eslint prettier husky lint-staged \
+  @commitlint/cli @commitlint/config-conventional)
 
-echo "Config files downloaded."
-
-# ------- install dev dependencies -------
-echo "Installing ESLint Flat stack + Prettier + Husky v9 …"
-$install eslint prettier husky \
-  @commitlint/cli @commitlint/config-conventional lint-staged \
-  @react-native-community/eslint-config eslint-config-prettier eslint-plugin-prettier
-
-# ------- patch package.json (jq preferred) -------
-echo "Updating package.json scripts…"
-lintstaged='{"*.{js,jsx,ts,tsx,json,md}":["prettier --write","eslint --fix"]}'
-
-if command -v jq >/dev/null; then
-  tmp=$(mktemp)
-  jq --argjson ls "$lintstaged" '
-      .scripts   |= (. // {}) + {
-        "lint":"eslint .",
-        "lint:fix":"eslint . --fix",
-        "format":"prettier --write .",
-        "prepare":"husky install",
-        "lint-staged":"lint-staged"
-      }
-      | ."lint-staged" = $ls ' package.json > "$tmp" && mv "$tmp" package.json
-else
-  node -e "
-    const fs=require('fs');const p=JSON.parse(fs.readFileSync('package.json'));
-    p.scripts={...p.scripts,
-      lint:'eslint .',
-      'lint:fix':'eslint . --fix',
-      format:'prettier --write .',
-      prepare:'husky install',
-      'lint-staged':'lint-staged'};
-    p['lint-staged']=$lintstaged;
-    fs.writeFileSync('package.json',JSON.stringify(p,null,2));
-  "
+if grep -Eq '"eslint"\s*:' package.json; then
+  echo "ℹ️  ESLint found—skipping ESLint install."
+  filtered=()
+  for pkg in "${pkg_list[@]}"; do
+    [[ "$pkg" == "eslint" ]] && continue
+    filtered+=("$pkg")
+  done
+  pkg_list=("${filtered[@]}")
 fi
 
-# ------- Husky v9 setup & hooks -------
-$exec_bin husky install
-$exec_bin husky set .husky/pre-commit "$run lint-staged"
-$exec_bin husky set .husky/commit-msg "$exec_bin --no-install commitlint --edit \"\$1\""
+# 6) Install devDependencies
+echo "📦  Installing code-quality packages…"
+"${install_cmd[@]}" "${pkg_list[@]}"
 
-echo "✅  ESLint Flat, Prettier, Husky & Commitlint are ready. Try a commit to see the hooks fire!"
+# 7) Patch package.json: scripts & lint-staged
+echo "🛠️  Updating package.json scripts…"
+lintstaged='{"*.{js,jsx,ts,tsx}":["prettier --write","eslint --fix"]}'
+if command -v jq >/dev/null 2>&1; then
+  tmp=$(mktemp)
+  jq --argjson ls "$lintstaged" '
+    .scripts |= (. // {}) + {
+      "lint":"eslint .",
+      "lint:fix":"eslint . --fix",
+      "format":"prettier --write .",
+      "prepare":"husky",
+      "lint-staged":"lint-staged"
+    }
+    | ."lint-staged" = $ls
+  ' package.json > "$tmp" && mv "$tmp" package.json
+else
+  node - <<'JS'
+const fs=require('fs');
+const pkg=JSON.parse(fs.readFileSync('package.json','utf8'));
+pkg.scripts ||= {};
+Object.assign(pkg.scripts,{
+  lint:'eslint .',
+  'lint:fix':'eslint . --fix',
+  format:'prettier --write .',
+  prepare:'husky',
+  'lint-staged':'lint-staged'
+});
+pkg['lint-staged']={ '*.{js,jsx,ts,tsx}':['prettier --write','eslint --fix'] };
+fs.writeFileSync('package.json',JSON.stringify(pkg,null,2));
+JS
+fi
+
+# 8) Bootstrap Husky via prepare script
+echo "🔧  Bootstrapping Husky…"
+"${run_cmd[@]}" prepare
+
+# 9) Manually create hooks (avoids deprecated commands)
+echo "🔨  Creating Git hooks…"
+touch .husky/pre-commit .husky/commit-msg
+
+pre_cmd="$(IFS=' '; echo "${run_cmd[*]}") lint-staged"  # e.g. "npm run lint-staged" or "bun run lint-staged"
+cat > .husky/pre-commit << HOOK
+#!/usr/bin/env sh
+$pre_cmd
+HOOK
+chmod +x .husky/pre-commit
+
+cat > .husky/commit-msg << HOOK
+#!/usr/bin/env sh
+$commitlint_cmd
+HOOK
+chmod +x .husky/commit-msg
+
+echo "🎉  Setup complete! ESLint Flat Config, Prettier, Husky hooks, lint-staged & commitlint are configured."
