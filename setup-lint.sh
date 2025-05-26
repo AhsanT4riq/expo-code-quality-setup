@@ -45,7 +45,7 @@ esac
 [ -d .git ] || git init
 
 # 4) Download config files
-repo_base="https://raw.githubusercontent.com/ahsant4riq/code-quality-setup/main"
+repo_base="https://raw.githubusercontent.com/ahsant4riq/expo-code-quality-setup/main"
 curl -sSfL "$repo_base/eslint.config.js"     -o eslint.config.js
 curl -sSfL "$repo_base/.prettierrc"          -o .prettierrc
 curl -sSfL "$repo_base/commitlint.config.js" -o commitlint.config.js

@@ -28,14 +28,14 @@ Run this one-liner in your project root:
 
 ```bash
 # Using npm (default)
-curl -sL https://raw.githubusercontent.com/ahsant4riq/code-quality-setup/main/setup-lint.sh | bash -s
+curl -sL https://raw.githubusercontent.com/ahsant4riq/expo-code-quality-setup/main/setup-lint.sh | bash -s
 
 # Or specify your preferred package manager
-curl -sL https://raw.githubusercontent.com/ahsant4riq/code-quality-setup/main/setup-lint.sh | bash -s yarn
+curl -sL https://raw.githubusercontent.com/ahsant4riq/expo-code-quality-setup/main/setup-lint.sh | bash -s yarn
 # or
-curl -sL https://raw.githubusercontent.com/ahsant4riq/code-quality-setup/main/setup-lint.sh | bash -s pnpm
+curl -sL https://raw.githubusercontent.com/ahsant4riq/expo-code-quality-setup/main/setup-lint.sh | bash -s pnpm
 # or
-curl -sL https://raw.githubusercontent.com/ahsant4riq/code-quality-setup/main/setup-lint.sh | bash -s bun
+curl -sL https://raw.githubusercontent.com/ahsant4riq/expo-code-quality-setup/main/setup-lint.sh | bash -s bun
 ```
 
 ## What It Does
