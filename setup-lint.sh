@@ -53,9 +53,7 @@ echo "✅  Config files downloaded."
 
 # 5) Build install list, skipping only exact 'eslint'
 pkg_list=(eslint prettier husky lint-staged \
-  @commitlint/cli @commitlint/config-conventional \
-  @react-native-community/eslint-config eslint-config-prettier eslint-plugin-prettier \
-  eslint-plugin-import eslint-plugin-react eslint-plugin-react-native eslint-config-expo)
+  @commitlint/cli @commitlint/config-conventional)
 
 if grep -Eq '"eslint"\s*:' package.json; then
   echo "ℹ️  ESLint found—skipping ESLint install."

@@ -2,17 +2,10 @@
 const { defineConfig } = require('eslint/config');
 const expoConfig = require('eslint-config-expo/flat');
 
-// Plugins
-const eslintPluginReact = require('eslint-plugin-react');
-const eslintPluginReactNative = require('eslint-plugin-react-native');
-const eslintPluginImport = require('eslint-plugin-import');
-const eslintPluginPrettier = require('eslint-plugin-prettier');
-
-// Prettier config
-const prettier = require('eslint-config-prettier');
-
+// Custom rules and overrides
 module.exports = defineConfig([
-  expoConfig,
+  // Base Expo config
+  ...expoConfig,
 
   // Ignore build artifacts
   {
@@ -22,17 +15,18 @@ module.exports = defineConfig([
   // Enable TS project linting
   {
     files: ['**/*.ts', '**/*.tsx'],
-    languageOptions: { parserOptions: { project: ['./tsconfig.json'] } },
+    languageOptions: {
+      parserOptions: {
+        project: './tsconfig.json',
+        ecmaFeatures: {
+          jsx: true,
+        },
+      },
+    },
   },
 
-  // Custom rules & plugins
+  // Custom rules
   {
-    plugins: {
-      react: eslintPluginReact,
-      'react-native': eslintPluginReactNative,
-      import: eslintPluginImport,
-      prettier: eslintPluginPrettier,
-    },
     rules: {
       // React rules
       'react/jsx-filename-extension': ['warn', { extensions: ['.tsx', '.jsx'] }],
@@ -43,6 +37,13 @@ module.exports = defineConfig([
         'error',
         {
           groups: ['builtin', 'external', 'internal', 'parent', 'sibling', 'index'],
+          pathGroups: [
+            {
+              pattern: '@/**',
+              group: 'internal',
+              position: 'after',
+            },
+          ],
           'newlines-between': 'always',
           alphabetize: { order: 'asc', caseInsensitive: true },
         },
@@ -50,12 +51,6 @@ module.exports = defineConfig([
       'import/first': 'error',
       'import/newline-after-import': 'error',
       'import/no-duplicates': 'error',
-
-      // Prettier integration
-      'prettier/prettier': 'error',
     },
   },
-
-  // Finally, disable any ESLint rules that conflict with Prettier
-  prettier,
 ]);
