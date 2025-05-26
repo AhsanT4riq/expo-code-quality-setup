@@ -2,8 +2,9 @@
 set -euo pipefail
 IFS=$'\n\t'
 
-# Usage: curl -sL https://yourserver.com/setup-lint.sh | bash -s [npm|yarn|pnpm|bun]
-pm="${1:-npm}" ; pm="${pm,,}"  # default -> npm, normalise case
+# Usage: curl -sL https://raw.githubusercontent.com/ahsant4riq/code-quality-setup/main/setup-lint.sh | bash -s [npm|yarn|pnpm|bun]
+pm="${1:-npm}"                                          # default to npm if no arg
+pm=$(printf '%s' "$pm" | tr '[:upper:]' '[:lower:]')    # lowercase safely
 
 [[ "$pm" =~ ^(npm|yarn|pnpm|bun)$ ]] || { echo "PM must be npm|yarn|pnpm|bun"; exit 1; }
 
