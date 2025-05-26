@@ -27,7 +27,6 @@ case "$pm" in
   yarn)
     install=(yarn add --dev)
     run="yarn"
-    # Yarn 2+ has dlx; Yarn 1 fallback to npx
     if yarn dlx --help >/dev/null 2>&1; then dlx="yarn dlx"; else dlx="npx"; fi
     commitlint_cmd='yarn commitlint --edit "$1"'
     ;;
@@ -56,21 +55,17 @@ curl -sSfL "$repo_base/commitlint.config.js" -o commitlint.config.js
 echo "✅  Config files downloaded."
 
 # --- determine install list, skipping eslint if already present ---
-# Base list of packages we want to install
 pkg_list=(eslint prettier husky lint-staged \
   @commitlint/cli @commitlint/config-conventional \
   @react-native-community/eslint-config eslint-config-prettier eslint-plugin-prettier)
-
-# Check package.json for existing ESLint entry
 if grep -Eq '"eslint"\s*:' package.json; then
   echo "ℹ️  ESLint already detected in package.json—skipping ESLint install."
-  # Remove 'eslint' from pkg_list
   pkg_list=("${pkg_list[@]/eslint}")
 fi
 
 # --- install devDependencies ---
 echo "📦  Installing code-quality packages…"
-"${install_cmd[@]}" "${pkg_list[@]}"
+"${install[@]}" "${pkg_list[@]}"
 
 # --- patch package.json scripts & lint-staged ---
 echo "🛠️  Updating package.json scripts…"
@@ -106,30 +101,23 @@ fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2));
 JS
 fi
 
-# --- run prepare to bootstrap Husky ---
+# --- bootstrap Husky via prepare script ---
 echo "🔧  Bootstrapping Husky (prepare)…"
 $run prepare
 
 # --- manually create hooks (avoids deprecated CLI) ---
 echo "🔨  Creating Git hooks…"
+mkdir -p .husky/_ && cp node_modules/husky/husky.sh .husky/_/husky.sh
 
-# Ensure loader
-mkdir -p .husky/_
-
-# Copy loader script from node_modules
-cp node_modules/husky/husky.sh .husky/_/husky.sh
-
-# Pre-commit hook
 cat > .husky/pre-commit << 'HOOK'
 #!/usr/bin/env sh
 "$run" lint-staged
 HOOK
 chmod +x .husky/pre-commit
 
-# Commit-msg hook
-cat > .husky/commit-msg << 'HOOK'
+cat > .husky/commit-msg << HOOK
 #!/usr/bin/env sh
-'"$commitlint_cmd"'
+$commitlint_cmd
 HOOK
 chmod +x .husky/commit-msg
 
