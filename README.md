@@ -42,7 +42,7 @@ curl -sL https://raw.githubusercontent.com/ahsant4riq/code-quality-setup/main/se
 
 1. Validates your environment and package manager
 2. Downloads standard configuration files:
-   - `.eslintrc.js`
+   - `eslint.config.js`
    - `.prettierrc`
    - `commitlint.config.js`
 3. Installs required development dependencies
@@ -85,13 +85,13 @@ After setup, these commands are available:
 
 ## Customization
 
-1. **ESLint**: Edit `.eslintrc.js` to modify linting rules
+1. **ESLint**: Edit `eslint.config.js` to modify linting rules
 2. **Prettier**: Edit `.prettierrc` to change formatting rules
 3. **Commit Messages**: Edit `commitlint.config.js` to modify commit message rules
 
 ## Requirements
 
-- Node.js project with a `package.json` file
+- React Native project with a `package.json` file
 - Git repository (will be initialized if not present)
 
 ## License
