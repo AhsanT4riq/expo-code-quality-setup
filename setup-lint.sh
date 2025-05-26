@@ -107,8 +107,7 @@ echo "🔧  Bootstrapping Husky…"
 
 # 9) Manually create hooks (avoids deprecated commands)
 echo "🔨  Creating Git hooks…"
-mkdir -p .husky/_ 
-cp node_modules/husky/husky.sh .husky/_/husky.sh
+touch .husky/pre-commit .husky/commit-msg
 
 pre_cmd="${run_cmd[*]} lint-staged"  # e.g. "npm run lint-staged" or "bun run lint-staged"
 cat > .husky/pre-commit << HOOK
