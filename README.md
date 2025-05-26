@@ -1,6 +1,6 @@
 # Code Quality Setup Script
 
-A one-command setup script to add comprehensive code quality tooling to your React Native projects.
+A one-command setup script to add comprehensive code quality tooling to your React Native Expo projects.
 
 ## Features
 
@@ -91,7 +91,7 @@ After setup, these commands are available:
 
 ## Requirements
 
-- React Native project with a `package.json` file
+- React Native Expo project with a `package.json` file
 - Git repository (will be initialized if not present)
 
 ## License
