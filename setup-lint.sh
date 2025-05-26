@@ -54,13 +54,20 @@ curl -sSfL "$repo_base/.prettierrc"          -o .prettierrc
 curl -sSfL "$repo_base/commitlint.config.js" -o commitlint.config.js
 echo "✅  Config files downloaded."
 
-# --- determine install list, skipping eslint if already present ---
+# --- determine install list, skipping only the exact 'eslint' entry if already present ---
 pkg_list=(eslint prettier husky lint-staged \
   @commitlint/cli @commitlint/config-conventional \
   @react-native-community/eslint-config eslint-config-prettier eslint-plugin-prettier)
+
 if grep -Eq '"eslint"\s*:' package.json; then
   echo "ℹ️  ESLint already detected in package.json—skipping ESLint install."
-  pkg_list=("${pkg_list[@]/eslint}")
+  filtered=()
+  for pkg in "${pkg_list[@]}"; do
+    if [[ "$pkg" != "eslint" ]]; then
+      filtered+=("$pkg")
+    fi
+  done
+  pkg_list=("${filtered[@]}")
 fi
 
 # --- install devDependencies ---
