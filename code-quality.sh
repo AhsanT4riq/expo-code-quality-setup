@@ -246,7 +246,7 @@ if [[ "$install_nativewind" =~ ^[Yy]$ ]]; then
   echo "🎨 Installing NativeWind & TailwindCSS..."
   
   # Install packages as production dependencies
-  "${install_cmd_prod[@]}" nativewind tailwindcss
+  "${install_cmd_prod[@]}" nativewind tailwindcss@^3.4.17
   echo "✅ NativeWind & TailwindCSS installed."
   
   echo "📥 Downloading NativeWind configuration files..."
