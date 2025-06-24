@@ -25,20 +25,10 @@ A one-command setup script to add comprehensive code quality tooling to your Rea
 
 ## Installation
 
-### Download and Run
-
-If you prefer to download and inspect the script first:
+### Run the script
 
 ```bash
-# Download the script
-curl -sL https://raw.githubusercontent.com/ahsant4riq/code-quality-setup/main/code-quality.sh \
-  -o code-quality.sh
-
-# Make it executable
-chmod +x code-quality.sh
-
-# Run the script
-./code-quality.sh
+curl -sL https://raw.githubusercontent.com/ahsant4riq/code-quality-setup/main/bootstrap.sh | bash
 ```
 
 The script will guide you through an interactive setup process where you can choose:
