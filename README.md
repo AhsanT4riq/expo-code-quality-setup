@@ -28,7 +28,7 @@ A one-command setup script to add comprehensive code quality tooling to your Rea
 ### Run the script
 
 ```bash
-curl -sL https://raw.githubusercontent.com/ahsant4riq/code-quality-setup/main/bootstrap.sh | bash
+bash <(curl -sSfL https://raw.githubusercontent.com/ahsant4riq/code-quality-setup/main/bootstrap.sh)
 ```
 
 The script will guide you through an interactive setup process where you can choose:
