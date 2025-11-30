@@ -27,9 +27,9 @@ select_package_manager() {
   while true; do
     # Clear previous menu
     for ((i=0; i<${#options[@]}; i++)); do
-      echo -ne "\033[2K\r"  # Clear line
+      echo -ne "\033[2K\r"
       if [[ $i -eq $selected ]]; then
-        echo -e "   \033[1;32m► ${options[$i]}\033[0m"  # Green arrow and text for selected
+        echo -e "   \033[1;32m► ${options[$i]}\033[0m"
       else
         echo "     ${options[$i]}"
       fi
@@ -42,18 +42,18 @@ select_package_manager() {
     IFS= read -rsn1 key
     
     case "$key" in
-      $'\x1b')  # ESC sequence
-        read -rsn2 key  # Read the next two characters
+      $'\x1b')
+        read -rsn2 key
         case "$key" in
-          '[A')  # Up arrow
+          '[A')  # Up
             ((selected > 0)) && ((selected--))
             ;;
-          '[B')  # Down arrow
+          '[B')  # Down
             ((selected < ${#options[@]} - 1)) && ((selected++))
             ;;
         esac
         ;;
-      '')  # Enter key
+      '')  # Enter
         break
         ;;
     esac
@@ -63,7 +63,6 @@ select_package_manager() {
   echo -ne "\033[${#options[@]}B"
   echo ""
   
-  # Set the selected package manager directly
   pm="${options[$selected]}"
 }
 
@@ -76,11 +75,11 @@ command -v "$pm" >/dev/null 2>&1 || { echo "❌  '$pm' not found in PATH. Please
 echo "✅ Using $pm as package manager"
 echo ""
 
-# 3) Map helpers per PM (arrays for install & run)
+# 3) Map helpers per PM
 case "$pm" in
   npm)
-    install_cmd=(npm install --save-dev --)     # array prevents word-splitting issues
-    install_cmd_prod=(npm install --)           # for production dependencies
+    install_cmd=(npm install --save-dev --)
+    install_cmd_prod=(npm install --)
     run_cmd=(npm run)
     commitlint_cmd='npx --no-install commitlint --edit "$1"'
     ;;
@@ -142,13 +141,11 @@ echo ""
 if [[ "$install_eslint_prettier" =~ ^[Yy]$ ]]; then
   echo "🔍 Installing ESLint & Prettier..."
   
-  # Download config files
   repo_base="https://raw.githubusercontent.com/ahsant4riq/expo-code-quality-setup/main"
   curl -sSfL "$repo_base/eslint.config.js"     -o eslint.config.js
   curl -sSfL "$repo_base/.prettierrc"          -o .prettierrc
   echo "✅ ESLint & Prettier config files downloaded."
 
-  # Build install list, skipping only exact 'eslint'
   pkg_list=(eslint prettier)
 
   if grep -Eq '"eslint"\s*:' package.json; then
@@ -156,7 +153,6 @@ if [[ "$install_eslint_prettier" =~ ^[Yy]$ ]]; then
     pkg_list=(prettier)
   fi
 
-  # Install packages
   "${install_cmd[@]}" "${pkg_list[@]}"
   echo "✅ ESLint & Prettier installed."
   echo ""
@@ -166,14 +162,12 @@ fi
 if [[ "$install_git_hooks" =~ ^[Yy]$ ]]; then
   echo "🔗 Installing Husky, lint-staged & Commitlint..."
   
-  # Download commitlint config if not already downloaded
   if [[ "$install_eslint_prettier" =~ ^[Nn]$ ]]; then
     repo_base="https://raw.githubusercontent.com/ahsant4riq/expo-code-quality-setup/main"
   fi
   curl -sSfL "$repo_base/commitlint.config.js" -o commitlint.config.js
   echo "✅ Commitlint config file downloaded."
 
-  # Install Git hook packages
   git_pkg_list=(husky lint-staged @commitlint/cli @commitlint/config-conventional)
   "${install_cmd[@]}" "${git_pkg_list[@]}"
   echo "✅ Git hook packages installed."
@@ -183,16 +177,42 @@ fi
 # 7) Update package.json scripts if any linting/git tools were installed
 if [[ "$install_eslint_prettier" =~ ^[Yy]$ ]] || [[ "$install_git_hooks" =~ ^[Yy]$ ]]; then
   echo "🛠️  Updating package.json scripts..."
-  
-  # Build scripts and lint-staged config based on selections
-  scripts_obj='{"prepare":"husky","lint-staged":"lint-staged"}'
+
+  # Start with empty objects
+  scripts_obj='{}'
   lintstaged_obj='{}'
-  
+
+  # Add ESLint / Prettier scripts if requested
   if [[ "$install_eslint_prettier" =~ ^[Yy]$ ]]; then
-    scripts_obj='{"lint":"eslint .","lint:fix":"eslint . --fix","format":"prettier --write .","prepare":"husky","lint-staged":"lint-staged"}'
-    lintstaged_obj='{"*.{js,jsx,ts,tsx}":["prettier --write","eslint --fix"]}'
+    scripts_obj='{
+      "lint": "eslint .",
+      "lint:fix": "eslint . --fix",
+      "format": "prettier --write ."
+    }'
   fi
-  
+
+  # Add Husky / lint-staged only if Git hooks requested
+  if [[ "$install_git_hooks" =~ ^[Yy]$ ]]; then
+    if [[ "$install_eslint_prettier" =~ ^[Yy]$ ]]; then
+      scripts_obj='{
+        "lint": "eslint .",
+        "lint:fix": "eslint . --fix",
+        "format": "prettier --write .",
+        "prepare": "husky",
+        "lint-staged": "lint-staged"
+      }'
+      lintstaged_obj='{
+        "*.{js,jsx,ts,tsx}": ["prettier --write", "eslint --fix"]
+      }'
+    else
+      scripts_obj='{
+        "prepare": "husky",
+        "lint-staged": "lint-staged"
+      }'
+      lintstaged_obj='{}'
+    fi
+  fi
+
   if command -v jq >/dev/null 2>&1; then
     tmp=$(mktemp)
     jq --argjson scripts "$scripts_obj" --argjson ls "$lintstaged_obj" '
@@ -245,16 +265,13 @@ fi
 if [[ "$install_nativewind" =~ ^[Yy]$ ]]; then
   echo "🎨 Installing NativeWind & TailwindCSS..."
   
-  # Install packages as production dependencies
   "${install_cmd_prod[@]}" nativewind tailwindcss@^3.4.17
   echo "✅ NativeWind & TailwindCSS installed."
   
   echo "📥 Downloading NativeWind configuration files..."
   
-  # Base URL for NativeWind config files
   nativewind_base="https://raw.githubusercontent.com/ahsant4riq/code-quality-setup/main/nativewind"
   
-  # Download NativeWind config files to project root
   curl -sSfL "$nativewind_base/tailwind.config.js" -o tailwind.config.js
   curl -sSfL "$nativewind_base/global.css" -o global.css
   curl -sSfL "$nativewind_base/metro.config.js" -o metro.config.js
